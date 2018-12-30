@@ -9,6 +9,7 @@ in steps, and by https://github.com/bmc/munkres/blob/master/munkres.py.
 
 """
 
+
 class ReducedMunkres:
 
     def __init__(self, costMat):
@@ -32,18 +33,17 @@ class ReducedMunkres:
         self.colResiduals = None
         assert self.m >= self.n - 1
 
-
     def _findUncovZero(self):
         """
         Find an uncovered zero in the matrix
         returns:
             z1: (tuple (row, col)) coordinates of a uncovered 0
         """
-        uncovZero = None
+        uncov_zero = None
         for z1, value in np.ndenumerate(self.costMat):
-            if value == 0 and not self.col_covered(z1[1]) and not self.row_covered(z1[0]):
-                uncovZero = z1
-        return uncovZero
+            if value == 0 and not self.col_covered[z1[1]] and not self.row_covered[z1[0]]:
+                uncov_zero = z1
+        return uncov_zero
 
     def _findStarInRow(self, row):
         """
@@ -51,7 +51,7 @@ class ReducedMunkres:
         the column index, or -1 if no starred element was found.
         """
         col = -1
-        for i, starred in enumerate(self.starred[row, :])
+        for i, star in enumerate(self.starred[row, :]):
             if star:
                 col = i
                 break
@@ -63,7 +63,7 @@ class ReducedMunkres:
         the row index, or -1 if no starred element was found.
         """
         row = -1
-        for i, starred in enumerate(self.starred[:, col])
+        for i, star in enumerate(self.starred[:, col]):
             if star:
                 row = i
                 break
@@ -75,7 +75,7 @@ class ReducedMunkres:
         the column index, or -1 if no primed element was found.
         """
         col = -1
-        for i, primed in enumerate(self.primed[row, :])
+        for i, primed in enumerate(self.primed[row, :]):
             if primed:
                 col = i
                 break
@@ -105,7 +105,7 @@ class ReducedMunkres:
                     ind = False
                     break
         return ind
-            
+
     def star(self, pos):
         """
         Args:
@@ -116,12 +116,12 @@ class ReducedMunkres:
         col = pos[1]
         # Other zero starred on the same row
         for j in range(self.m):
-            if col != j and self.starred[row, j] == True:
+            if col != j and self.starred[row, j]:
                 canStar = False
                 break
         # Other zero starred on the same column
         for i in range(self.n):
-            if row != i and self.starred[i, col] == True:
+            if row != i and self.starred[i, col]:
                 canStar = False
                 break
 
@@ -152,13 +152,13 @@ class ReducedMunkres:
         """
         self.row_covered = [False for i in range(self.n)]
         self.col_covered = [False for i in range(self.m)]
-        self.primed = np.full(costMat.shape, False, dtype=bool)
+        self.primed = np.full(self.costMat.shape, False, dtype=bool)
 
     def step1(self):
         """
         Finds the smallest values of each column of the matrix, and subtract it from the columns
         """
-        minValues = np.min(self.costMat, axis=0).reshape((1,-1))
+        minValues = np.min(self.costMat, axis=0).reshape((1, -1))
         minValues = np.repeat(minValues, self.n, axis=0)
         self.costMat = self.costMat - minValues
 
@@ -196,7 +196,7 @@ class ReducedMunkres:
         while not done:
             # Find the first zero Z1 non-covered
             z1 = self._findUncovZero()
-            
+
             # All the zeros are covered
             if z1 is None:
                 done = True
@@ -204,19 +204,19 @@ class ReducedMunkres:
 
             else:
                 self.primed[z1[0], z1[1]] = True
-                starCol = self._findStarInRow(z1[0]) 
+                starCol = self._findStarInRow(z1[0])
 
                 # if z1 is in the last row or there is no 0* in its row
-                if  starCol == -1:
+                if starCol == -1:
                     self.z1_r = z1[0]
                     self.z1_c = z1[1]
                     done = True
-                    step = 5 #augment path
+                    step = 5  # augment path
 
                 else:
                     col = list(self.starred[z1[0], :]).index(True)
-                    
-                    #Cover the row, and uncover the column of Z1'
+
+                    # Cover the row, and uncover the column of Z1'
                     assert self.col_covered[col] == True
                     assert self.row_covered[z1[0]] == False
                     self.row_covered[z1[0]] = True
@@ -228,9 +228,7 @@ class ReducedMunkres:
         """
 
         # Reset covers and primes
-        self.row_covered = [False for i in range(self.n)]
-        self.col_covered = [False for i in range(self.m)]
-        self.primed = np.full(costMat.shape, False, dtype=bool)
+        self.reset()
 
     def compute(self):
         pass
