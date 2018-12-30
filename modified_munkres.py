@@ -11,7 +11,6 @@ in steps, and by https://github.com/bmc/munkres/blob/master/munkres.py.
 
 
 class ReducedMunkres:
-
     def __init__(self, costMat):
         """
         Args:
@@ -28,9 +27,12 @@ class ReducedMunkres:
 
         self.z1_r = None
         self.z1_c = None
+
         # Specific to the modified version of Munkres
-        self.rowResiduals = None
-        self.colResiduals = None
+        self.rowResiduals = np.array([0 for _ in range(self.n)])
+        self.colResiduals = np.array([0 for _ in range(self.m)])
+        self.banned_columns = []
+
         assert self.m >= self.n - 1
 
     def _findUncovZero(self):
@@ -108,6 +110,8 @@ class ReducedMunkres:
 
     def star(self, pos):
         """
+        Stars pos in resulting matrix iff there is no star in row/column
+
         Args:
             pos: (tuple (i,j)) the position of the tested zero 
         """
@@ -162,6 +166,8 @@ class ReducedMunkres:
         minValues = np.repeat(minValues, self.n, axis=0)
         self.costMat = self.costMat - minValues
 
+        self.colResiduals -= minValues
+
         return 2
 
     def step2(self):
@@ -177,9 +183,10 @@ class ReducedMunkres:
 
     def step3(self):
         """
-        Covers the column containing a starred zero
+        Covers each column containing a starred zero
         """
-        for _, col, starred in np.ndenumerate(self.starred):
+        for pos, starred in np.ndenumerate(self.starred):
+            _, col = pos
             if starred and not self.col_covered[col]:
                 self.col_covered[col] = True
             elif starred and self.col_covered[col]:
@@ -207,6 +214,7 @@ class ReducedMunkres:
                 starCol = self._findStarInRow(z1[0])
 
                 # if z1 is in the last row or there is no 0* in its row
+                # TODO: Charles: pourquoi la condition ci-bas gère le cas z1 in the last row?
                 if starCol == -1:
                     self.z1_r = z1[0]
                     self.z1_c = z1[1]
@@ -217,8 +225,8 @@ class ReducedMunkres:
                     col = list(self.starred[z1[0], :]).index(True)
 
                     # Cover the row, and uncover the column of Z1'
-                    assert self.col_covered[col] == True
-                    assert self.row_covered[z1[0]] == False
+                    assert self.col_covered[col] is True
+                    assert self.row_covered[z1[0]] is False
                     self.row_covered[z1[0]] = True
                     self.col_covered[col] = False
 
